@@ -1,0 +1,128 @@
+﻿<html>
+  <head>
+    <title>Agile Estimate Card</title>
+
+    <script src="https://cdn.firebase.com/js/client/2.2.1/firebase.js"></script>
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js'></script>
+    <link rel="stylesheet" type="text/css" href="example.css">
+  </head>
+
+  <body>
+
+
+<!-- 参加人数 -->
+<div id="number" style="position: fixed; top: 20; left: 10;">
+  <label for="num">参加人数: </lable>
+  <input type='text' id='numberInput'/>
+</div>
+
+<!-- reset -->
+<div id="reset" style="position: fixed; top: 20; right: 10;">
+  <button id="resetButton" type="button" name="reset" value="bbb">
+    <font size="5" color="#333399">reset</font>
+  </button>
+</div>
+
+<!-- CHAT MARKUP -->
+<div class="example-chat l-demo-container">
+  <header>Agile Estimate Cards</header>
+
+  <div class='example-chat-toolbar'>
+    <label for="nameInput">Username:</label>
+    <input type='text' id='nameInput' placeholder='ユーザネームを入力してください...'>
+  </div>
+
+  <ul id='example-messages' class="example-chat-messages"></ul>
+
+  <footer>
+    <input type='text' id='messageInput'  placeholder='規模を入力してください...例：1, 3, 5'>
+  </footer>
+</div>
+
+
+
+<!-- CHAT JAVACRIPT -->
+<script>
+  // CREATE A REFERENCE TO FIREBASE
+  var messagesRef = new Firebase('https://sweltering-torch-299.firebaseio.com/message');
+  var numberRef = new Firebase('https://sweltering-torch-299.firebaseio.com/people');
+
+  // REGISTER DOM ELEMENTS
+  var numOfp = 5;
+  var numberField = $('#numberInput');
+  var messageField = $('#messageInput');
+  var nameField = $('#nameInput');
+  var messageList = $('#example-messages');
+  var btnReset = $('#resetButton');
+    
+  // LISTEN FOR KEYPRESS EVENT
+  numberField.keypress(function (e) {
+    if (e.keyCode == 13) {
+      //FIELD VALUES
+      var num = numberField.val() || numOfp;
+
+      //SAVE DATA TO FIREBASE AND EMPTY FIELD
+      numberRef.update({
+           "number": num
+      });
+    }
+  });
+  
+  // LISTEN FOR KEYPRESS EVENT
+  messageField.keypress(function (e) {
+    if (e.keyCode == 13) {
+      //FIELD VALUES
+      var username = nameField.val();
+      var message = messageField.val();
+
+      //SAVE DATA TO FIREBASE AND EMPTY FIELD
+      messagesRef.push({name:username, text:message});
+      messageField.val('');
+    }
+  });
+  
+  // number once
+  numberRef.on("value", function(data) {
+      numOfp = data.child("number").val();
+      numberField.val(numOfp);
+  });
+  
+  // change number
+  numberRef.on("child_changed", function(snapshot) {
+      numOfp = snapshot.val();
+      numberField.val(numOfp);
+  });
+
+  // Add a callback that is triggered for each chat message.
+  messagesRef.on('value', function (datasnapshot) {
+      var dataS = datasnapshot;
+      var num = dataS.numChildren();
+      messageList.empty();
+      
+      dataS.forEach(function(child){
+           //CREATE ELEMENTS MESSAGE & SANITIZE TEXT
+           var message;
+           var messageElement = $("<li>");
+           var nameElement = $("<strong class='example-chat-username'></strong>");
+           var childbody = child.val();
+           nameElement.text(childbody["name"]);
+           if ( num >= numOfp ) {
+             message =  childbody["text"];
+           } else {
+             message = "---";
+           }
+           messageElement.text(message).prepend(nameElement);
+           
+           //ADD MESSAGE
+           messageList.append(messageElement);
+      });
+  });
+  
+  // reset
+  btnReset.click(function(){
+      messageList.empty();
+      messagesRef.remove();
+  });
+</script>
+  </body>
+</html>
